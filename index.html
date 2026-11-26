@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Цікавий факт дня</title>
+  <style>
+    :root {
+      --bg: #f4efe6;
+      --ink: #1f1a14;
+      --muted: #6b6258;
+      --card: #fffdf8;
+      --accent: #c45c26;
+      --accent-dark: #9a4318;
+      --line: #e6ddd0;
+      --error: #9b2c2c;
+      --error-bg: #fdecec;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      font-family: "Segoe UI", "Noto Sans", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top, #fff8ee 0%, transparent 55%),
+        var(--bg);
+    }
+
+    main {
+      width: min(640px, 100%);
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 40px 36px 32px;
+      box-shadow: 0 18px 50px rgba(80, 48, 16, 0.08);
+    }
+
+    p.kicker {
+      margin: 0 0 8px;
+      font-size: 0.85rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    h1 {
+      margin: 0 0 24px;
+      font-size: clamp(1.8rem, 4vw, 2.4rem);
+      line-height: 1.15;
+    }
+
+    #fact {
+      min-height: 7.5rem;
+      margin: 0 0 28px;
+      padding: 20px 22px;
+      border-radius: 14px;
+      background: #faf6f0;
+      border: 1px solid var(--line);
+      font-size: 1.15rem;
+      line-height: 1.55;
+    }
+
+    #fact.is-placeholder {
+      color: var(--muted);
+    }
+
+    #fact.is-loading {
+      color: var(--muted);
+      font-style: italic;
+    }
+
+    #fact.is-error {
+      color: var(--error);
+      background: var(--error-bg);
+      border-color: #f3c7c7;
+      font-style: normal;
+    }
+
+    button {
+      appearance: none;
+      border: 0;
+      border-radius: 999px;
+      padding: 14px 26px;
+      font: inherit;
+      font-weight: 650;
+      color: #fff;
+      background: var(--accent);
+      cursor: pointer;
+      transition: background 0.15s ease, transform 0.15s ease;
+    }
+
+    button:hover:not(:disabled) {
+      background: var(--accent-dark);
+    }
+
+    button:active:not(:disabled) {
+      transform: translateY(1px);
+    }
+
+    button:disabled {
+      opacity: 0.65;
+      cursor: wait;
+    }
+
+    button:focus-visible {
+      outline: 3px solid #f0b089;
+      outline-offset: 3px;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <p class="kicker">Випадковий факт</p>
+    <h1>Цікавий факт дня</h1>
+    <p id="fact" class="is-placeholder" aria-live="polite">
+      Натисніть кнопку, щоб отримати факт.
+    </p>
+    <button id="get-fact" type="button">Отримати факт</button>
+  </main>
+
+  <script>
+    const API_URL = "https://uselessfacts.jsph.pl/api/v2/facts/random?language=en";
+    const factEl = document.getElementById("fact");
+    const buttonEl = document.getElementById("get-fact");
+
+    function setFactState(text, state) {
+      factEl.textContent = text;
+      factEl.className = state;
+    }
+
+    async function loadFact() {
+      setFactState("Завантаження...", "is-loading");
+      buttonEl.disabled = true;
+
+      try {
+        const response = await fetch(API_URL, { signal: AbortSignal.timeout(8000) });
+        if (!response.ok) {
+          throw new Error("HTTP " + response.status);
+        }
+
+        const data = await response.json();
+        const text = data && typeof data.text === "string" ? data.text.trim() : "";
+        if (!text) {
+          throw new Error("Empty fact");
+        }
+
+        setFactState(text, "");
+      } catch (error) {
+        setFactState(
+          "Не вдалося отримати факт. Перевірте підключення до інтернету та спробуйте ще раз.",
+          "is-error"
+        );
+      } finally {
+        buttonEl.disabled = false;
+      }
+    }
+
+    buttonEl.addEventListener("click", loadFact);
+  </script>
+</body>
+</html>
